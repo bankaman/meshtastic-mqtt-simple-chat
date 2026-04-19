@@ -124,6 +124,7 @@
       font-size: 13px;
       line-height: 1.4;
       word-wrap: break-word;
+      white-space: pre-line;
     }
 
     .message.sent {
@@ -153,6 +154,11 @@
 
     .message-time {
       opacity: 0.7;
+    }
+
+    .message-private {
+      opacity: 0.7;
+      color: #22c55e;
     }
 
     .input-area {
@@ -369,9 +375,45 @@
     const usernameInput = document.getElementById('username');
 
     let currentUsername = 'Anonymous';
+    let audioCtx = null;
+
+    function playNotificationSound() {
+      console.log("playNotificationSound START");
+      if (!audioCtx) {
+        console.log("creating AudioContext");
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume().then(() => {
+          console.log("AudioContext resumed");
+          playTone();
+        });
+      } else {
+        playTone();
+      }
+
+      function playTone() {
+        const oscillator = audioCtx.createOscillator();
+        const gainNode = audioCtx.createGain();
+
+        oscillator.connect(gainNode);
+        gainNode.connect(audioCtx.destination);
+
+        oscillator.frequency.value = 800;
+        oscillator.type = 'sine';
+
+        gainNode.gain.setValueAtTime(0.3, audioCtx.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+
+        oscillator.start(audioCtx.currentTime);
+        oscillator.stop(audioCtx.currentTime + 0.3);
+        console.log("playNotificationSound END");
+      }
+    }
 
     function formatTime(timestamp) {
-      const date = new Date(timestamp*1000);
+      const date = new Date(timestamp * 1000);
       return date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
     }
 
@@ -391,11 +433,20 @@
       timeEl.className = 'message-time';
       timeEl.textContent = formatTime(data.data.timestamp);
 
+      const isPrivate = data.data.to !== 0xFFFFFFFF;
+
       metaEl.appendChild(senderEl);
       metaEl.appendChild(timeEl);
 
+      if (isPrivate) {
+        const privateEl = document.createElement('span');
+        privateEl.className = 'message-private';
+        privateEl.textContent = "(private)"
+        metaEl.appendChild(privateEl);
+      }
+
       const textEl = document.createElement('div');
-      textEl.textContent = data.data.payload.text;
+      textEl.textContent = data.data.payload.text.replace("\n", "\r\n");
 
       messageEl.appendChild(metaEl);
       messageEl.appendChild(textEl);
@@ -497,6 +548,10 @@
       console.log(data);
       const isOwn = data.sender === currentUsername;
       addMessage(data, isOwn);
+
+      if (!isOwn && !document.hasFocus()) {
+        playNotificationSound();
+      }
     });
 
     window.electronAPI.onStatusChange(({ status, message }) => {

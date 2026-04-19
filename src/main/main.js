@@ -136,16 +136,20 @@ function connectMQTT(config) {
   }
 }
 
-function sendMessage(text, sender) {
+function sendMessage(text, sender, to = 0xFFFFFFFF) {
   if (!mqttClient || !isConnected) {
     return false;
   }
 
+  senderNum = parseInt(sender.substr(1), 16);
+
   const message = {
-    text: text,
-    sender: sender || 'Anonymous',
-    timestamp: Date.now()
-  };
+    from: senderNum,
+    to: to,
+    type: "sendtext",
+    payload: text,
+    channel: 0
+  }
 
   try {
     mqttClient.publish(settings.publishTopic, JSON.stringify(message));
