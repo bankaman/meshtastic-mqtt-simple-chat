@@ -1,0 +1,36 @@
+{
+  "name": "mqtt-messenger",
+  "version": "1.0.0",
+  "description": "MQTT Messenger Application",
+  "main": "src/main/main.js",
+  "scripts": {
+    "start": "electron . --no-sandbox",
+    "build": "electron-builder --win --x64",
+    "pack": "electron-builder --dir"
+  },
+  "keywords": ["mqtt", "messenger", "electron"],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "electron": "^41.2.1",
+    "mqtt": "^5.15.1"
+  },
+  "devDependencies": {
+    "electron-builder": "^25.1.8"
+  },
+  "build": {
+    "appId": "com.messenger.mqtt",
+    "productName": "MQTT Messenger",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "src/**/*",
+      "node_modules/**/*",
+      "package.json"
+    ],
+    "win": {
+      "target": "portable"
+    }
+  }
+}
