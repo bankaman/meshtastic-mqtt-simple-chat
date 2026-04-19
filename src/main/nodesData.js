@@ -28,7 +28,7 @@ function getSenderName(from) {
 
 
 if (fs.existsSync(MAPS_JSON_FILE)) {
-    modesMap = JSON.parse(fs.readFileSync(MAPS_JSON_FILE));
+    nodesMap = JSON.parse(fs.readFileSync(MAPS_JSON_FILE));
 }
 
 console.log(MAPS_JSON_FILE);

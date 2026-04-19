@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain } = require('electron');
+const { app, BrowserWindow, ipcMain, Notification } = require('electron');
 const path = require('path');
 const mqtt = require('mqtt');
 const fs = require('fs');
@@ -88,7 +88,18 @@ function connectMQTT(config) {
         if (data.type == "text") {
 
           console.log(data);
-          mainWindow?.webContents.send('mqtt-message', { sender: getSenderName(data.from), data: data });
+          const senderName = getSenderName(data.from);
+          const text = data.payload.text || '';
+
+          mainWindow?.webContents.send('mqtt-message', { sender: senderName, data: data, text: text });
+
+          if (!mainWindow?.isFocused() && Notification.isSupported()) {
+            new Notification({
+              title: senderName,
+              body: text,
+              silent: false
+            }).show();
+          }
           return;
         }
 
