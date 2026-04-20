@@ -484,10 +484,10 @@
     function openSettings() {
       window.electronAPI.getSettings().then(settings => {
         brokerUrlInput.value = settings.brokerUrl || '';
-        subscribeTopicInput.value = settings.subscribeTopic || '';
-        publishTopicInput.value = settings.publishTopic || '';
-        usernameInput.value = settings.username || 'Anonymous';
-        currentUsername = settings.username || 'Anonymous';
+        subscribeTopicInput.value = settings.subscribeTopic || 'msh/+/json/#';
+        publishTopicInput.value = settings.publishTopic || 'msh/2/json/mqtt/write';
+        usernameInput.value = settings.username || '!aabbccdd';
+        currentUsername = settings.username || '!aabbccdd';
         settingsModal.classList.add('active');
       });
     }
@@ -501,7 +501,7 @@
         brokerUrl: brokerUrlInput.value.trim(),
         subscribeTopic: subscribeTopicInput.value.trim(),
         publishTopic: publishTopicInput.value.trim(),
-        username: usernameInput.value.trim() || 'Anonymous'
+        username: usernameInput.value.trim() || '!aabbccdd'
       };
 
       currentUsername = settings.username;
@@ -546,7 +546,7 @@
 
     window.electronAPI.onMessage((data) => {
       console.log(data);
-      const isOwn = data.sender === currentUsername;
+      const isOwn = data.senderId === parseInt(currentUsername.substring(1), 16);
       addMessage(data, isOwn);
 
       if (!isOwn && !document.hasFocus()) {
@@ -559,7 +559,7 @@
     });
 
     window.electronAPI.getSettings().then(settings => {
-      currentUsername = settings.username || 'Anonymous';
+      currentUsername = settings.username || '!aabbccdd';
     });
 
     updateStatus('disconnected');

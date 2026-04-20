@@ -3,6 +3,7 @@ const path = require('path');
 const mqtt = require('mqtt');
 const fs = require('fs');
 
+const MessageLog = require('./messageLog');
 const { addNodeInfo, getSenderName } = require("./nodesData");
 
 app.disableHardwareAcceleration();
@@ -35,6 +36,20 @@ function saveSettings(data) {
   } catch (e) {
     console.error('Failed to save settings:', e);
     return false;
+  }
+}
+
+function showMessage(data, notify = true) {
+  const senderName = getSenderName(data.from);
+  const text = data.payload.text || '';
+  mainWindow?.webContents.send('mqtt-message', { senderId: data.from, sender: senderName, data: data, text: text });
+
+  if (notify && !mainWindow?.isFocused() && Notification.isSupported()) {
+    new Notification({
+      title: senderName,
+      body: text,
+      silent: false
+    }).show();
   }
 }
 
@@ -87,29 +102,13 @@ function connectMQTT(config) {
 
         if (data.type == "text") {
 
-          console.log(data);
-          const senderName = getSenderName(data.from);
-          const text = data.payload.text || '';
-
-          mainWindow?.webContents.send('mqtt-message', { sender: senderName, data: data, text: text });
-
-          if (!mainWindow?.isFocused() && Notification.isSupported()) {
-            new Notification({
-              title: senderName,
-              body: text,
-              silent: false
-            }).show();
-          }
+          MessageLog.addMessage(data);
+          showMessage(data);
           return;
         }
 
         console.log(data);
       } catch (e) {
-        // mainWindow?.webContents.send('mqtt-message', {
-        //   text: message.toString(),
-        //   sender: 'unknown',
-        //   timestamp: Date.now()
-        // });
         console.log(e);
       }
     });
@@ -164,6 +163,12 @@ function sendStatus(status, message = '') {
   mainWindow?.webContents.send('mqtt-status', { status, message });
 }
 
+function showMessagesLog() {
+  for (let m of MessageLog.getLastMessages(20)) {
+    showMessage(m, false);
+  }
+}
+
 function createWindow() {
   mainWindow = new BrowserWindow({
     width: 900,
@@ -187,6 +192,7 @@ function createWindow() {
     if (savedSettings.brokerUrl) {
       connectMQTT(savedSettings);
     }
+    showMessagesLog();
   });
 
   mainWindow.on('closed', () => {
